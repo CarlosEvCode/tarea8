@@ -1,79 +1,87 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Clasificador de Formas</title>
+    <link rel="stylesheet" href="styles.css">
 
+    <!-- Librerías de P5.js y ML5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js"></script>
     <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
   </head>
-  <body style="background-color: antiquewhite">
+  <body>
+    <div class="test-container">
+        <h1>Clasificador de Formas</h1>
+        <p>Dibuja un círculo, triángulo o cuadrado en el lienzo</p>
+
+        <!-- Contenedor del Canvas -->
+        <div id="canvas"></div>
+
+        <!-- Controles -->
+        <div class="controls">
+            <button id="boton-limpiar" class="btn-minimal">Limpiar Lienzo</button>
+        </div>
+
+        <!-- Resultados -->
+        <div class="result-box">
+            <div id="resultado-texto">Cargando modelo...</div>
+        </div>
+    </div>
+
     <script>
-      //Objetos
       let shapeClassifier;
       let canvas;
-      let resultDiv;
       let inputImage;
-      let clearButton;
 
-      //Configuracion de red neuronal
+      // Configuración inicial
       function setup() {
+        // Crear el canvas y colocarlo en el contenedor HTML
         canvas = createCanvas(400, 400);
+        canvas.parent("canvas");
 
-        //Configuracion de red neuronal
+        // Configuración de la red neuronal
         let options = {
-          inputs: [64, 64, 4], //ancho, alto, canales de color
+          inputs: [64, 64, 4], 
           task: "imageClassification",
         };
 
-        //Red neuronal
         shapeClassifier = ml5.neuralNetwork(options);
 
-        //Ubicacion de nuestro modelo ya entrenado
+        // Ubicación de nuestro modelo ya entrenado
         const modelDetails = {
           model: "model/model.json",
           metadata: "model/model_meta.json",
           weights: "model/model.weights.bin",
         };
 
-        //Canvas blanco
         background(255);
 
-        //Boton reset
-        clearButton = createButton("Limpiar");
-        clearButton.mousePressed(cleanCanvas);
+        // Escuchar el clic del botón limpiar
+        document.getElementById("boton-limpiar").addEventListener("click", cleanCanvas);
 
-        //Texto inicial en el DIV
-        resultDiv = createDiv("Modelo cargado correctamente");
+        inputImage = createGraphics(64, 64);
 
-        //Enviar los datos para su analisis
-        //CANVAS (400, 400) > INPUTIMAGE (reescalar) > RED NEURONAL
-        inputImage = createGraphics(64, 64); //Controlador, intermediario
-
-        //Red Neuronal recibe el modelo personalizado
+        // Cargar el modelo entrenado
         shapeClassifier.load(modelDetails, modelLoaded);
-      } //setup
+      }
 
       function modelLoaded() {
-        //Otros procesos...
         classifyImage();
       }
 
-      //Analizar los datos de entrada (canvas)
+      // Analizar el canvas en tiempo real
       function classifyImage() {
-        //Reescalado...
         inputImage.copy(canvas, 0, 0, width, height, 0, 0, 64, 64);
         shapeClassifier.classify({ image: inputImage }, gotResults);
       }
 
       function cleanCanvas() {
-        background(255); //Blanco
+        background(255);
       }
 
-      //Pintar sobre el canvas
+      // Pintar sobre el canvas al presionar el mouse
       function draw() {
-        //Boton primario
         if (mouseIsPressed) {
           strokeWeight(8);
           stroke(0);
@@ -81,17 +89,19 @@
         }
       }
 
+      // Recibir resultados del clasificador
       function gotResults(err, result) {
         if (err) {
           console.error(err);
           return;
         }
 
-        //No hay error...
         let descripcion = result[0].label;
         let confianza = result[0].confidence;
 
-        resultDiv.html(`${descripcion} - Confianza: ${confianza}`);
+        // Mostrar resultados en el HTML
+        document.getElementById("resultado-texto").innerHTML = 
+          descripcion.toUpperCase() + " - Confianza: " + (confianza * 100).toFixed(2) + "%";
 
         classifyImage();
       }
